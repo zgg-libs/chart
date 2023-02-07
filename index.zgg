@@ -1,0 +1,159 @@
+
+_colors := [
+	'f33', '393', '339',
+]
+
+export func yAxisFromZero(step, fmt) {
+	fmt = fmt ?? v => str(v)
+	return (minVal, maxVal) => {
+		begin := 0
+		end   := int(maxVal / step)
+		if end * step < maxVal {
+			end++
+		}
+		return [
+			[{value: v*step, label: fmt(v*step)} for v in begin..end],
+			0,
+		]
+	}
+}
+
+export func yAxisFromMin(step, fmt) {
+	fmt = fmt ?? v => str(v)
+	return (minVal, maxVal) => {
+		begin := int(minVal / step)
+		end   := int(maxVal / step)
+		if end * step < maxVal {
+			end++
+		}
+		return [
+			[{value: v*step, label: fmt(v*step)} for v in begin..end],
+			minVal,
+		]
+	}
+}
+
+export func makeLineDrawer() {
+	return func (canvas, n, datas, dataIndex, data, color, left, bottom, width, height, getY) {
+		for i, value in data {
+			x := left + (i + 0.5) * width / n
+			y := getY(value)
+			if i == 0 {
+				canvas.moveTo(x, y)
+			} else {
+				canvas.lineTo(x, y)
+			}
+			canvas.circle(x, y, 2)
+		}
+		canvas.stroke(color)
+	}
+}
+
+export func makeBarDrawer(barWidth, barMargin) {
+	barWidth  = barWidth ?? 3
+	barMargin = barMargin ?? 1.5
+	distance := barWidth + barMargin
+	return func(canvas, n, datas, dataIndex, data, color, left, bottom, width, height, getY) {
+		ol := 0.5 * distance * (1 - len(datas))
+		for i, value in data {
+			x := left + (i + 0.5) * width / n
+				+ ol + dataIndex * distance
+			y := getY(value)
+			canvas.rect(x - barWidth / 2.0, y, barWidth, bottom - y, ';$color')
+		}
+	}
+}
+
+export func drawChart(canvas, rect, options) {
+	[left, top, width, height] := rect
+	title  := options.title
+	names  := options.names
+	datas  := options.datas
+	yaxis  := options.yaxis
+	drawer := options.drawer ?? makeLineDrawer()
+
+    [tw, th] := title ? canvas.measureText(title): [0, 0]
+	nh := when th {
+		0 -> canvas.measureText('A')[1]
+		else -> th
+	}
+	gTop     := top + th + 10
+	gBottom  := top + height - nh - 10
+	gLeft    := left + 10
+	gRight   := left + width - 20
+	gWidth   := gRight - gLeft
+	gHeight  := gBottom - gTop
+	minValue := float(min(...datas.map(d => min(...d))))
+	maxValue := float(max(...datas.map(d => max(...d))))
+
+	if yaxis {
+		if isCallable(yaxis) {
+			[ys, zero] := yaxis(minValue, maxValue)
+			yaxis = ys
+			minValue = zero ?? minValue
+		}
+		maxW := 0
+		for item in yaxis {
+			if w := canvas.measureText(item.label ?? str(item))[0]; w > maxW {
+				maxW = w
+			}
+			if v := item.value ?? item; v > maxValue {
+				maxValue = v
+			} else if v < minValue {
+				minValue = v
+			}
+		}
+		if yw := options.valueWidth; yw {
+			gLeft  += yw + 5
+			gWidth -= yw + 5
+		} else if maxW > 0 {
+			gLeft  += maxW + 5
+			gWidth -= maxW + 5
+		}
+	}
+	getY := value => gBottom - gHeight * (value - minValue) / (maxValue - minValue)
+
+	// 绘制标题
+	if title {
+		canvas.text(title, left + (width - tw) / 2, top + th + 5, '000')
+	}
+	// 绘制坐标轴
+	canvas.line(gLeft, gTop, gLeft, gBottom, '000')
+	canvas.line(gLeft, gBottom, gRight, gBottom, '000')
+	if yaxis {
+		for item in yaxis {
+			label := item.label ?? str(item)
+			value := item.value ?? item
+			[yw, yh] := canvas.measureText(label)
+			y := getY(value)
+			canvas.text(label, gLeft - 5 - yw, y + yh / 2, '000')
+			canvas.line(gLeft + 1, y, gRight, y, 'eee')
+		}
+	}
+	// 绘制names
+	for i, name in names {
+		x := gLeft + (i + 0.5) * gWidth / len(names)
+		canvas.line(x, gBottom, x, gBottom + 3, '000')
+		canvas.line(x, gTop, x, gBottom, 'eee')
+		nw := canvas.measureText(name)[0]
+		canvas.text(name, x - nw / 2, gBottom + 5 + nh, '000')
+	}
+
+	nDatas := len(datas)
+	for j, data in datas {
+		color := _colors[j % len(_colors)]
+		drawer(
+			canvas,
+			len(names),
+			datas,
+			j,
+			data,
+			color,
+			gLeft,
+			gBottom,
+			gWidth,
+			gHeight,
+			getY,
+		)
+	}
+}
