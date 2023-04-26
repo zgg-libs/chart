@@ -72,6 +72,14 @@ export func drawChart(canvas, rect, options) {
 	yaxis  := options.yaxis
 	drawer := options.drawer ?? makeLineDrawer()
 
+	if canvas == nil {
+		canvas = @drawing.Canvas(width, height, 'fff')
+		left = 0
+		top  = 0
+	} else {
+		left = left ?? 0
+		top  = top  ?? 0
+	}
     [tw, th] := title ? canvas.measureText(title): [0, 0]
 	nh := when th {
 		0 -> canvas.measureText('A')[1]
@@ -156,4 +164,5 @@ export func drawChart(canvas, rect, options) {
 			getY,
 		)
 	}
+	return canvas
 }
