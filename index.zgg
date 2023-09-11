@@ -76,7 +76,7 @@ DEFAULT_OPTIONS := {
 		blockHeight : 8,
 		itemMargin  : 10,
 		textMargin  : 5,
-		rowMargin   : 10,
+		rowMargin   : 18,
 	},
 }
 
@@ -142,6 +142,7 @@ export func drawChart(canvas, rect, options) {
 			row.width = row.items.map('width').reduce()
 						+ (len(row.items) - 1) * opt.itemMargin
 		}
+		legendHeight += (opt.rowMargin - DEFAULT_OPTIONS.padding)
 		gBottom -= legendHeight
 		gHeight -= legendHeight
 		legendTop = gBottom
