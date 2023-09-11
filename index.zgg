@@ -87,6 +87,7 @@ export func drawChart(canvas, rect, options) {
 	datas   := options.datas
 	yaxis   := options.yaxis
 	legends := options.legends
+	colors  := options.colors ?? _colors
 	drawer  := options.drawer ?? makeLineDrawer()
 
 	if canvas == nil {
