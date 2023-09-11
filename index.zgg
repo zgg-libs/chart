@@ -1,7 +1,12 @@
 
 _colors := [
-	'f33', '393', '339',
-]
+	[86, 166, 75],
+	[224, 180, 0],
+	[87, 148, 242],
+	[250, 100, 0],
+	[224, 47, 68],
+	[242, 204, 12],
+].map(v => '%02x%02x%02x' % v)
 
 export func yAxisFromZero(step, fmt) {
 	fmt = fmt ?? v => str(v)
@@ -64,13 +69,25 @@ export func makeBarDrawer(barWidth, barMargin) {
 	}
 }
 
+DEFAULT_OPTIONS := {
+	padding: 10,
+	legend: {
+		blockWidth  : 40,
+		blockHeight : 8,
+		itemMargin  : 10,
+		textMargin  : 5,
+		rowMargin   : 10,
+	},
+}
+
 export func drawChart(canvas, rect, options) {
 	[left, top, width, height] := rect
-	title  := options.title
-	names  := options.names
-	datas  := options.datas
-	yaxis  := options.yaxis
-	drawer := options.drawer ?? makeLineDrawer()
+	title   := options.title
+	names   := options.names
+	datas   := options.datas
+	yaxis   := options.yaxis
+	legends := options.legends
+	drawer  := options.drawer ?? makeLineDrawer()
 
 	if canvas == nil {
 		canvas = @drawing.Canvas(width, height, 'fff')
@@ -85,14 +102,49 @@ export func drawChart(canvas, rect, options) {
 		0 -> canvas.measureText('A')[1]
 		else -> th
 	}
-	gTop     := top + th + 10
-	gBottom  := top + height - nh - 10
-	gLeft    := left + 10
-	gRight   := left + width - 20
+	padding2 := DEFAULT_OPTIONS.padding * 2
+	gTop     := top + th + DEFAULT_OPTIONS.padding
+	gBottom  := top + height - nh - DEFAULT_OPTIONS.padding
+	gLeft    := left + DEFAULT_OPTIONS.padding
+	gRight   := left + width - padding2
 	gWidth   := gRight - gLeft
 	gHeight  := gBottom - gTop
 	minValue := float(min(...datas.map(d => min(...d))))
 	maxValue := float(max(...datas.map(d => max(...d))))
+
+	// Process legends
+	legendRows   := []
+	legendHeight := 0
+	legendTop    := 0
+	if legends {
+		opt := DEFAULT_OPTIONS.legend
+		[curW, curH] := [width, 0]
+		for legend in legends {
+			[lw, lh] := canvas.measureText(legend)
+			itemWidth := opt.blockWidth + opt.textMargin + lw
+			curH = max(curH, lh)
+			item := {text: legend, width: itemWidth}
+			if newW := curW + itemWidth + opt.itemMargin; newW > width - padding2 {
+				legendRows.push({
+					height: curH,
+					items: [item],
+				})
+				curW = itemWidth
+			} else {
+				legendRows[-1].height = curH
+				legendRows[-1].items.push(item)
+				curW = newW
+			}
+		}
+		for row in legendRows {
+			legendHeight += opt.rowMargin + row.height
+			row.width = row.items.map('width').reduce()
+						+ (len(row.items) - 1) * opt.itemMargin
+		}
+		gBottom -= legendHeight
+		gHeight -= legendHeight
+		legendTop = gBottom
+	}
 
 	if yaxis {
 		if isCallable(yaxis) {
@@ -139,14 +191,18 @@ export func drawChart(canvas, rect, options) {
 		}
 	}
 	// 绘制names
-	for i, name in names {
-		x := gLeft + (i + 0.5) * gWidth / len(names)
-		canvas.line(x, gBottom, x, gBottom + 3, '000')
-		canvas.line(x, gTop, x, gBottom, 'eee')
-		nw := canvas.measureText(name)[0]
-		canvas.text(name, x - nw / 2, gBottom + 5 + nh, '000')
+	if names {
+		for i, name in names {
+			x := gLeft + (i + 0.5) * gWidth / len(names)
+			canvas.line(x, gBottom, x, gBottom + 3, '000')
+			canvas.line(x, gTop, x, gBottom, 'eee')
+			nw := canvas.measureText(name)[0]
+			canvas.text(name, x - nw / 2, gBottom + 5 + nh, '000')
+			legendTop = gBottom + 5 + nh
+		}
 	}
 
+	// 绘制数据
 	nDatas := len(datas)
 	for j, data in datas {
 		color := _colors[j % len(_colors)]
@@ -164,5 +220,33 @@ export func drawChart(canvas, rect, options) {
 			getY,
 		)
 	}
+
+	// 绘制legends
+	if legendRows {
+		opt := DEFAULT_OPTIONS.legend
+		y := legendTop + opt.rowMargin
+		index := -1
+		textOffset := opt.blockWidth + opt.textMargin
+		for row in legendRows {
+			x := (width - padding2 - row.width) / 2
+			for item in row.items {
+				index++
+				color := _colors[index % len(_colors)]
+				canvas.rect(
+					x, y,// + (row.height - opt.blockHeight) / 2,
+					opt.blockWidth, opt.blockHeight
+				).fill(color)
+				textH := canvas.measureText(item.text)[1]
+				canvas.text(item.text,
+					x + textOffset,
+					y + opt.blockHeight,
+					color,
+				)
+				x += item.width + opt.itemMargin
+			}
+			y += row.height + opt.rowMargin
+		}
+	}
+
 	return canvas
 }
