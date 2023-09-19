@@ -82,13 +82,14 @@ DEFAULT_OPTIONS := {
 
 export func drawChart(canvas, rect, options) {
 	[left, top, width, height] := rect
-	title   := options.title
-	names   := options.names
-	datas   := options.datas
-	yaxis   := options.yaxis
-	legends := options.legends
-	colors  := options.colors ?? _colors
-	drawer  := options.drawer ?? makeLineDrawer()
+	title     := options.title
+	names     := options.names
+	datas     := options.datas
+	yaxis     := options.yaxis
+	legends   := options.legends
+	colors    := options.colors ?? _colors
+	drawer    := options.drawer ?? makeLineDrawer()
+	lineColor := options.lineCoder ? 'ddd'
 
 	if canvas == nil {
 		canvas = @drawing.Canvas(width, height, 'fff')
