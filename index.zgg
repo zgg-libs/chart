@@ -174,7 +174,7 @@ export func drawChart(canvas, rect, options) {
 			gWidth -= maxW + 5
 		}
 	}
-	getY := value => gBottom - gHeight * (value - minValue) / (maxValue - minValue)
+	getY := value => @math.round(gBottom - gHeight * (value - minValue) / (maxValue - minValue))
 
 	// 绘制标题
 	if title {
@@ -190,7 +190,7 @@ export func drawChart(canvas, rect, options) {
 			[yw, yh] := canvas.measureText(label)
 			y := getY(value)
 			canvas.text(label, gLeft - 5 - yw, y + yh / 2, '000')
-			canvas.line(gLeft + 1, y, gRight, y, 'eee')
+			canvas.line(gLeft + 1, y, gRight, y, lineColor)
 		}
 	}
 	// 绘制names
@@ -198,7 +198,7 @@ export func drawChart(canvas, rect, options) {
 		for i, name in names {
 			x := gLeft + (i + 0.5) * gWidth / len(names)
 			canvas.line(x, gBottom, x, gBottom + 3, '000')
-			canvas.line(x, gTop, x, gBottom, 'eee')
+			canvas.line(x, gTop, x, gBottom, lineColor)
 			nw := canvas.measureText(name)[0]
 			canvas.text(name, x - nw / 2, gBottom + 5 + nh, '000')
 			legendTop = gBottom + 5 + nh
