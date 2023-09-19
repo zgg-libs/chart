@@ -89,7 +89,7 @@ export func drawChart(canvas, rect, options) {
 	legends   := options.legends
 	colors    := options.colors ?? _colors
 	drawer    := options.drawer ?? makeLineDrawer()
-	lineColor := options.lineCoder ? 'ddd'
+	lineColor := options.lineCoder ?? 'ddd'
 
 	if canvas == nil {
 		canvas = @drawing.Canvas(width, height, 'fff')
