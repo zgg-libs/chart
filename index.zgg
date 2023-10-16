@@ -195,11 +195,16 @@ export func drawChart(canvas, rect, options) {
 	}
 	// 绘制names
 	if names {
+		lastEnd := 0
 		for i, name in names {
 			x := gLeft + (i + 0.5) * gWidth / len(names)
 			canvas.line(x, gBottom, x, gBottom + 3, '000')
 			canvas.line(x, gTop, x, gBottom, lineColor)
 			nw := canvas.measureText(name)[0]
+			if x - nw / 2 < lastEnd {
+				continue
+			}
+			lastEnd = x + nw / 2
 			canvas.text(name, x - nw / 2, gBottom + 5 + nh, '000')
 			legendTop = gBottom + 5 + nh
 		}
