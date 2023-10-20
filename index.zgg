@@ -213,7 +213,7 @@ export func drawChart(canvas, rect, options) {
 	// 绘制数据
 	nDatas := len(datas)
 	for j, data in datas {
-		color := _colors[j % len(_colors)]
+		color := colors[j % len(colors)]
 		drawer(
 			canvas,
 			len(names),
@@ -239,7 +239,7 @@ export func drawChart(canvas, rect, options) {
 			x := (width - padding2 - row.width) / 2
 			for item in row.items {
 				index++
-				color := _colors[index % len(_colors)]
+				color := colors[index % len(colors)]
 				canvas.rect(
 					x, y,// + (row.height - opt.blockHeight) / 2,
 					opt.blockWidth, opt.blockHeight
