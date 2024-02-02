@@ -197,14 +197,11 @@ export func drawChart(canvas, rect, options) {
 	if names {
 		lastEnd := 0
 		for i, name in names {
-			if !name {
-				continue
-			}
 			x := gLeft + (i + 0.5) * gWidth / len(names)
 			canvas.line(x, gBottom, x, gBottom + 3, '000')
 			canvas.line(x, gTop, x, gBottom, lineColor)
 			nw := canvas.measureText(name)[0]
-			if x - nw / 2 < lastEnd {
+			if !name || x - nw / 2 < lastEnd {
 				continue
 			}
 			lastEnd = x + nw / 2
