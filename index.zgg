@@ -8,9 +8,24 @@ _colors := [
 	[242, 204, 12],
 ].map(v => '%02x%02x%02x' % v)
 
+func getStepByGap(gap) {
+	assert gap > 0
+	step := 10 ** (@math.ceil(@math.log10(gap)) - 1)
+	nums := @math.ceil(gap / step)
+	if nums <= 2 {
+		step /= 5
+	} else if nums <= 5 {
+		step /= 2
+	}
+	return step
+}
+
 export func yAxisFromZero(step, fmt) {
 	fmt = fmt ?? v => str(v)
 	return (minVal, maxVal) => {
+		if step <= 0 {
+			step = getStepByGap(maxVal)
+		}
 		begin := 0
 		end   := int(maxVal / step)
 		if end * step < maxVal {
@@ -26,6 +41,11 @@ export func yAxisFromZero(step, fmt) {
 export func yAxisFromMin(step, fmt) {
 	fmt = fmt ?? v => str(v)
 	return (minVal, maxVal) => {
+		if minVal == maxVal {
+			step = minVal
+		} else if step <= 0 {
+			step = getStepByGap(maxVal - minVal)
+		}
 		begin := int(minVal / step)
 		end   := int(maxVal / step)
 		if end * step < maxVal {
@@ -149,6 +169,14 @@ export func drawChart(canvas, rect, options) {
 		legendTop = gBottom
 	}
 
+	if maxValue == minValue {
+		r := @math.abs(minValue / 2)
+		if r == 0 {
+			r = 5
+		}
+		maxValue += r
+		minValue -= r
+	}
 	if yaxis {
 		if isCallable(yaxis) {
 			[ys, zero] := yaxis(minValue, maxValue)
@@ -257,4 +285,37 @@ export func drawChart(canvas, rect, options) {
 	}
 
 	return canvas
+}
+
+func drawByData(size, data, opts) {
+	assert len(size) == 2
+	canvas := @drawing.Canvas(...size, 'fff')
+	options := {...opts}
+	if !options.yaxis {
+		options.yaxis = yAxisFromMin(0)
+	}
+	if data is @db.QueryResult {
+		data = data.toTable()
+	}
+	if data is @ptable.PTable {
+		arr  := data.toArray(true)
+		head := arr[0]
+		rows := arr.slice(1)
+		options.names   = rows.map(r => str(r[0]))
+		options.legends = head.slice(1)
+		options.datas   = options.legends.map((_, i) => rows.map(i+1))
+	}
+	return drawChart(canvas, [0, 0, ...size], options)
+}
+
+export func drawLineByData(size, data, opts) {
+	opts = opts || {}
+	opts.drawer = makeLineDrawer()
+	return drawByData(size, data, opts)
+}
+
+export func drawBarByData(size, data, opts) {
+	opts = opts || {}
+	opts.drawer = makeBarDrawer()
+	return drawByData(size, data, opts)
 }
