@@ -264,7 +264,7 @@ export func drawChart(canvas, rect, options) {
 		index := -1
 		textOffset := opt.blockWidth + opt.textMargin
 		for row in legendRows {
-			x := (width - padding2 - row.width) / 2
+			x := left + (width - padding2 - row.width) / 2
 			for item in row.items {
 				index++
 				color := colors[index % len(colors)]
