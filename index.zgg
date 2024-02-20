@@ -297,14 +297,13 @@ func drawByData(size, data, opts) {
 	if data is @db.QueryResult {
 		data = data.toTable()
 	}
-	if data is @ptable.PTable {
-		arr  := data.toArray(true)
-		head := arr[0]
-		rows := arr.slice(1)
-		options.names   = rows.map(r => str(r[0]))
-		options.legends = head.slice(1)
-		options.datas   = options.legends.map((_, i) => rows.map(i+1))
-	}
+	assert data is @ptable.PTalbe
+	arr  := data.toArray(true)
+	head := arr[0]
+	rows := arr.slice(1)
+	options.names   = rows.map(r => str(r[0]))
+	options.legends = head.slice(1)
+	options.datas   = options.legends.map((_, i) => rows.map(i+1))
 	return drawChart(canvas, [0, 0, ...size], options)
 }
 
@@ -318,4 +317,64 @@ export func drawBarByData(size, data, opts) {
 	opts = opts || {}
 	opts.drawer = makeBarDrawer()
 	return drawByData(size, data, opts)
+}
+
+class Chart {
+	__init__(data, drawFunc) {
+		this._data = data
+		this._drawFunc = drawFunc
+	}
+	font(...font) {
+		this._font = font
+		return this
+	}
+	title(title) {
+		this._title = title
+	}
+	drawTo(canvas, rect, opts) {
+		assert len(rect) == 4
+		data := this._data
+		options := {...(opts || {})}
+		options.drawer = this._drawFunc()
+		if !options.yaxis {
+			options.yaxis = yAxisFromMin(0)
+		}
+		if !options.title {
+			options.title = this._title
+		}
+		if data is @db.QueryResult {
+			data = data.toTable()
+		}
+		assert data is @ptable.PTable
+		arr  := data.toArray(true)
+		head := arr[0]
+		rows := arr.slice(1)
+		options.names   = rows.map(r => str(r[0]))
+		options.legends = head.slice(1)
+		options.datas   = options.legends.map((_, i) => rows.map(i+1))
+		if f := this._font; f {
+			if f[0] is @drawing.Font {
+				canvas.useFont(...f)
+			} else {
+				canvas.loadFont(...f)
+			}
+		}
+		return drawChart(canvas, rect, options)
+	}
+	draw(width, height, opts) {
+		canvas := @drawing.Canvas(width, height, 'fff')
+		return this.drawTo(canvas, [0, 0, width, height], opts)
+	}
+}
+
+export class LineChart(Chart) {
+	__init__(data) {
+		super.__init__(data, makeLineDrawer)
+	}
+}
+
+export class BarChart(Chart) {
+	__init__(data) {
+		super.__init__(data, makeBarDrawer)
+	}
 }
