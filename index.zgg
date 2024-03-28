@@ -58,7 +58,8 @@ export func yAxisFromMin(step, fmt) {
 	}
 }
 
-export func makeLineDrawer() {
+export func makeLineDrawer(drawOpts) {
+	drawOpts = drawOpts ?? {}
 	return func (canvas, n, datas, dataIndex, data, color, left, bottom, width, height, getY) {
 		for i, value in data {
 			x := left + (i + 0.5) * width / n
@@ -68,16 +69,17 @@ export func makeLineDrawer() {
 			} else {
 				canvas.lineTo(x, y)
 			}
-			canvas.circle(x, y, 2)
+			canvas.circle(x, y, drawOpts.dotRadius ?? 2)
 		}
 		canvas.stroke(color)
 	}
 }
 
 export func makeBarDrawer(barWidth, barMargin) {
-	barWidth  = barWidth ?? 3
-	barMargin = barMargin ?? 1.5
-	distance := barWidth + barMargin
+	drawOpts   = drawOpts ?? {}
+	barWidth  := drawOpts.barWidth ?? 3
+	barMargin := drawOpts.barMargin ?? 1.5
+	distance  := barWidth + barMargin
 	return func(canvas, n, datas, dataIndex, data, color, left, bottom, width, height, getY) {
 		ol := 0.5 * distance * (1 - len(datas))
 		for i, value in data {
@@ -320,9 +322,10 @@ export func drawBarByData(size, data, opts) {
 }
 
 class Chart {
-	__init__(data, drawFunc) {
+	__init__(data, drawFunc, drawOpts) {
 		this._data = data
 		this._drawFunc = drawFunc
+		this._drawOpts = drawOpts ?? {}
 	}
 	font(...font) {
 		this._font = font
@@ -335,7 +338,7 @@ class Chart {
 		assert len(rect) == 4
 		data := this._data
 		options := {...(opts || {})}
-		options.drawer = this._drawFunc()
+		options.drawer = this._drawFunc(this._drawOpts)
 		if !options.yaxis {
 			options.yaxis = yAxisFromMin(0)
 		}
@@ -368,13 +371,13 @@ class Chart {
 }
 
 export class LineChart(Chart) {
-	__init__(data) {
-		super.__init__(data, makeLineDrawer)
+	__init__(data, drawOpts) {
+		super.__init__(data, makeLineDrawer, drawOpts)
 	}
 }
 
 export class BarChart(Chart) {
-	__init__(data) {
-		super.__init__(data, makeBarDrawer)
+	__init__(data, drawOpts) {
+		super.__init__(data, makeBarDrawer, drawOpts)
 	}
 }
