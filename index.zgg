@@ -299,7 +299,7 @@ func drawByData(size, data, opts) {
 	if data is @db.QueryResult {
 		data = data.toTable()
 	}
-	assert data is @ptable.PTalbe
+	assert data is @ptable.PTable
 	arr  := data.toArray(true)
 	head := arr[0]
 	rows := arr.slice(1)
