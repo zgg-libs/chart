@@ -109,7 +109,9 @@ export func drawChart(canvas, rect, options) {
 	title     := options.title
 	names     := options.names
 	datas     := options.datas
+	datas2    := options.datas2
 	yaxis     := options.yaxis
+	yaxis2    := options.yaxis2
 	legends   := options.legends
 	colors    := options.colors ?? _colors
 	drawer    := options.drawer ?? makeLineDrawer()
@@ -137,6 +139,8 @@ export func drawChart(canvas, rect, options) {
 	gHeight  := gBottom - gTop
 	minValue := float(min(...datas.map(d => min(...d))))
 	maxValue := float(max(...datas.map(d => max(...d))))
+	minVal2  := datas2 ? float(min(...datas2.map(d => min(...d)))): 0
+	maxVal2  := datas2 ? float(max(...datas2.map(d => max(...d)))): 0
 
 	// Process legends
 	legendRows   := []
@@ -181,6 +185,14 @@ export func drawChart(canvas, rect, options) {
 		maxValue += r
 		minValue -= r
 	}
+	if maxVal2 == minVal2 {
+		r := @math.abs(minVal2 / 2)
+		if r == 0 {
+			r = 5
+		}
+		maxVal2 += r
+		minVal2 -= r
+	}
 	if yaxis {
 		if isCallable(yaxis) {
 			[ys, zero] := yaxis(minValue, maxValue)
@@ -207,6 +219,32 @@ export func drawChart(canvas, rect, options) {
 		}
 	}
 	getY := value => @math.round(gBottom - gHeight * (value - minValue) / (maxValue - minValue))
+	if yaxis2 {
+		if isCallable(yaxis2) {
+			[ys, zero] := yaxis2(minVal2, maxVal2)
+			yaxis2 = ys
+			minVal2 = zero ?? minVal2
+		}
+		maxW := 0
+		for item in yaxis2 {
+			if w := canvas.measureText(item.label ?? str(item))[0]; w > maxW {
+				maxW = w
+			}
+			if v := item.value ?? item; v > maxVal2 {
+				maxVal2 = v
+			} else if v < minVal2 {
+				minVal2 = v
+			}
+		}
+		if yw := options.valueWidth; yw {
+			gWidth -= yw + 5
+			gRight -= yw + 5
+		} else if maxW > 0 {
+			gWidth -= maxW + 5
+			gRight -= maxW + 5
+		}
+	}
+	getY2 := value => @math.round(gBottom - gHeight * (value - minVal2) / (maxVal2 - minVal2))
 
 	// 绘制标题
 	if title {
@@ -224,6 +262,18 @@ export func drawChart(canvas, rect, options) {
 			canvas.text(label, gLeft - 5 - yw, y + yh / 2, '000')
 			canvas.line(gLeft + 1, y, gRight, y, lineColor)
 		}
+	}
+	if yaxis2 {
+		axisX := gLeft + gWidth
+		for item in yaxis2 {
+			label := item.label ?? str(item)
+			value := item.value ?? item
+			[yw, yh] := canvas.measureText(label)
+			y := getY2(value)
+			canvas.text(label, axisX + 5, y + yh / 2, '000')
+			canvas.line(gLeft + 1, y, gRight, y, lineColor)
+		}
+		canvas.line(gRight, gTop, gRight, gBottom, '000')
 	}
 	// 绘制names
 	if names {
@@ -247,17 +297,15 @@ export func drawChart(canvas, rect, options) {
 	for j, data in datas {
 		color := colors[j % len(colors)]
 		drawer(
-			canvas,
-			len(names),
-			datas,
-			j,
-			data,
-			color,
-			gLeft,
-			gBottom,
-			gWidth,
-			gHeight,
-			getY,
+			canvas, len(names), datas, j, data, color,
+			gLeft, gBottom, gWidth, gHeight, getY,
+		)
+	}
+	for j, data in datas2 {
+		color := colors[(j + nDatas) % len(colors)]
+		drawer(
+			canvas, len(names), datas2, j, data, color,
+			gLeft, gBottom, gWidth, gHeight, getY2,
 		)
 	}
 
@@ -288,6 +336,7 @@ export func drawChart(canvas, rect, options) {
 		}
 	}
 
+	log({[getY2(maxVal2)], maxVal2, minVal2, [getY(maxValue)], maxValue, minValue})
 	return canvas
 }
 
