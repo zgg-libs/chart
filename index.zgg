@@ -109,7 +109,7 @@ export func drawChart(canvas, rect, options) {
 	title     := options.title
 	names     := options.names
 	datas     := options.datas
-	datas2    := options.datas2
+	datas2    := options.datas2 ?? []
 	yaxis     := options.yaxis
 	yaxis2    := options.yaxis2
 	legends   := options.legends
