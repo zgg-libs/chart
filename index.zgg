@@ -336,7 +336,6 @@ export func drawChart(canvas, rect, options) {
 		}
 	}
 
-	log({[getY2(maxVal2)], maxVal2, minVal2, [getY(maxValue)], maxValue, minValue})
 	return canvas
 }
 
